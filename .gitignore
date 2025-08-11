@@ -1,0 +1,50 @@
+# Configuration files with personal data
+config.conf
+# Note: config.example.conf is tracked (template for users)
+
+# Log files with personal data
+*_log_*.csv
+*.log
+copy_log_*.csv
+move_log_*.csv
+delete_log_*.csv
+
+# Backup/version files
+*\([0-9][0-9][0-9]\)*
+*.bak
+*.backup
+
+# Cursor backup files
+.cursorignore
+\(000\).cursorignore
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Personal data directories
+logs/
+temp/
+
+# Original project transfer documents (contain personal data)
+PROJECT_TRANSFER_ORIGINAL.md
+
+# Tools directory (contains utility scripts, not core functionality)
+# Note: tools/ directory IS tracked by git, but individual tools may be ignored
+# if they contain sensitive data or are truly one-time use
