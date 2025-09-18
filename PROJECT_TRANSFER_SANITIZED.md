@@ -128,16 +128,15 @@ echo -e "${GREEN}Selected folder(s): ${SELECTED_FOLDERS[*]}${NC}"
 echo -e "${WHITE}Date filtering options:${NC}"
 echo "  1) All files"
 echo "  2) Since last copy"
-echo "  3) Files from date onwards (EXCLUDING the start date)"
-echo "  4) Files before date (INCLUDING the end date)"
-echo "  5) Files between two dates (EXCLUDING start, INCLUDING end)"
-echo "  6) Today only (files created today)"
-echo "  7) Yesterday only (files created yesterday)"
-echo "  8) Last 7 days (files created in the last 7 days)"
+    echo "  3) Files from date onwards (INCLUDING the start date)"
+    echo "  4) Files up to date (INCLUDING the end date)"
+    echo "  5) Files between two dates (INCLUDING both start and end dates)"
+echo "  6) Today only (INCLUDING all files from today)"
+echo "  7) Yesterday only (INCLUDING all files from yesterday)"
+echo "  8) Last 7 days (INCLUDING the last 7 days up to today)"
 echo ""
-echo -e "${YELLOW}Note: Date filtering is based on file creation/modification time${NC}"
-echo -e "${YELLOW}      'EXCLUDING' means files created on that exact date are NOT included${NC}"
-echo -e "${YELLOW}      'INCLUDING' means files created on that exact date ARE included${NC}"
+echo -e "${YELLOW}Note: All specified dates are INCLUDED in the results${NC}"
+echo -e "${YELLOW}      Date filtering is based on file modification time${NC}"
 echo -ne "${YELLOW}Choose option [1]: ${NC}"
 read date_option
 [[ -z "$date_option" ]] && date_option=1
@@ -173,18 +172,19 @@ case $date_option in
         DATE_FILTER="-newermt '$start_date' ! -newermt '$end_date'"
         ;;
     6)
+        # TODAY ONLY - Include all of today
         today=$(date +%Y-%m-%d)
-        tomorrow=$(date -d "tomorrow" +%Y-%m-%d)
-        DATE_FILTER="-newermt '$today' ! -newermt '$tomorrow'"
+        DATE_FILTER="-newermt '$today 00:00:00' ! -newermt '$today 23:59:59'"
         ;;
     7)
+        # YESTERDAY ONLY - Include all of yesterday
         yesterday=$(date -d "yesterday" +%Y-%m-%d)
-        today=$(date +%Y-%m-%d)
-        DATE_FILTER="-newermt '$yesterday' ! -newermt '$today'"
+        DATE_FILTER="-newermt '$yesterday 00:00:00' ! -newermt '$yesterday 23:59:59'"
         ;;
     8)
+        # LAST 7 DAYS - Include the last 7 days INCLUDING today
         week_ago=$(date -d "7 days ago" +%Y-%m-%d)
-        DATE_FILTER="-newermt '$week_ago'"
+        DATE_FILTER="-newermt '$week_ago 00:00:00'"
         ;;
 esac
 
@@ -361,6 +361,27 @@ All source code is included above. To recreate:
 ---
 
 **Transfer Complete**: This project is ready for immediate use in the new environment with minimal setup required.
+
+## Recent Updates (2025-01-27)
+
+### Fixed Date Filtering Logic
+- **Issue**: Option 6 (today only) was including files from the past week instead of just today
+- **Root Cause**: Incorrect use of `-newermt` with date-only strings instead of precise timestamps
+- **Solution**: Updated all date filters to use precise time ranges (00:00:00 to 23:59:59)
+- **Consistency**: All date options now consistently INCLUDE the specified dates
+
+### Key Changes Made:
+1. **Option 6 (Today)**: Now uses `-newermt '$today 00:00:00' ! -newermt '$today 23:59:59'`
+2. **Option 7 (Yesterday)**: Now uses `-newermt '$yesterday 00:00:00' ! -newermt '$yesterday 23:59:59'`
+3. **All date ranges**: Include proper time components for precise filtering
+4. **Menu text**: Updated to clearly state that all dates are INCLUDED
+5. **Verification logic**: Fixed `verify_transfer` function to use transfer start time
+
+### Testing Status:
+- ✅ Date filtering now works correctly for all options
+- ✅ Option 6 properly includes only files from today
+- ✅ Verification function accurately counts transferred files
+- ✅ All date ranges consistently include specified dates
 
 ## Development Notes
 

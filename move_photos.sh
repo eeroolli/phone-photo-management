@@ -88,17 +88,16 @@ fi
 if [[ $QUIET_MODE -eq 0 ]]; then
     echo -e "${WHITE}Date filtering options:${NC}"
     echo "  1) All files"
-    echo "  2) Since last copy"
-    echo "  3) Files from date onwards (EXCLUDING the start date)"
-    echo "  4) Files before date (INCLUDING the end date)"
-    echo "  5) Files between two dates (EXCLUDING start, INCLUDING end)"
-    echo "  6) Today only (files created today)"
-    echo "  7) Yesterday only (files created yesterday)"
-    echo "  8) Last 7 days (files created in the last 7 days)"
+    echo "  2) Since last copy (including last copy timestamp)"
+    echo "  3) Files from date onwards (INCLUDING the start date)"
+    echo "  4) Files up to date (INCLUDING the end date)"
+    echo "  5) Files between two dates (INCLUDING both start and end dates)"
+    echo "  6) Today only"
+    echo "  7) Yesterday only"
+    echo "  8) Last 7 days (INCLUDING the last 7 days up to today)"
     echo ""
-    echo -e "${YELLOW}Note: Date filtering is based on file creation/modification time${NC}"
-    echo -e "${YELLOW}      'EXCLUDING' means files created on that exact date are NOT included${NC}"
-    echo -e "${YELLOW}      'INCLUDING' means files created on that exact date ARE included${NC}"
+    echo -e "${YELLOW}Note: All specified dates are INCLUDED in the results${NC}"
+    echo -e "${YELLOW}      Date filtering is based on file modification time${NC}"
     echo -ne "${YELLOW}Choose option [2]: ${NC}"
     read date_option
     [[ -z "$date_option" ]] && date_option=2
@@ -107,11 +106,11 @@ else
     date_option=2
 fi
 
-# Build date filter part
+# Build date filter part - CONSISTENT INCLUSION VERSION
 DATE_FILTER=""
 case $date_option in
     2)
-        # Since last move - check move log for last operation
+        # Since last move - includes the exact timestamp
         if [[ -f "$MOVE_LOG" ]]; then
             LAST_MOVE=$(tail -1 "$MOVE_LOG" | cut -d',' -f1)
             if [[ -n "$LAST_MOVE" ]]; then
@@ -126,14 +125,16 @@ case $date_option in
         if [[ $QUIET_MODE -eq 0 ]]; then
             echo -ne "${YELLOW}Enter start date (YYYY-MM-DD): ${NC}"
             read start_date
-            DATE_FILTER="-newermt '$start_date'"
+            # Include files from start date onwards (INCLUDING the start date)
+            DATE_FILTER="-newermt '$start_date 00:00:00'"
         fi
         ;;
     4)
         if [[ $QUIET_MODE -eq 0 ]]; then
             echo -ne "${YELLOW}Enter end date (YYYY-MM-DD): ${NC}"
             read end_date
-            DATE_FILTER="! -newermt '$end_date'"
+            # Include files up to and INCLUDING the end date
+            DATE_FILTER="! -newermt '$end_date 23:59:59'"
         fi
         ;;
     5)
@@ -142,22 +143,24 @@ case $date_option in
             read start_date
             echo -ne "${YELLOW}Enter end date (YYYY-MM-DD): ${NC}"
             read end_date
-            DATE_FILTER="-newermt '$start_date' ! -newermt '$end_date'"
+            # Include files from start date (INCLUDING) to end date (INCLUDING)
+            DATE_FILTER="-newermt '$start_date 00:00:00' ! -newermt '$end_date 23:59:59'"
         fi
         ;;
     6)
+        # TODAY ONLY - Include all of today
         today=$(date +%Y-%m-%d)
-        tomorrow=$(date -d "tomorrow" +%Y-%m-%d)
-        DATE_FILTER="-newermt '$today' ! -newermt '$tomorrow'"
+        DATE_FILTER="-newermt '$today 00:00:00' ! -newermt '$today 23:59:59'"
         ;;
     7)
+        # YESTERDAY ONLY - Include all of yesterday
         yesterday=$(date -d "yesterday" +%Y-%m-%d)
-        today=$(date +%Y-%m-%d)
-        DATE_FILTER="-newermt '$yesterday' ! -newermt '$today'"
+        DATE_FILTER="-newermt '$yesterday 00:00:00' ! -newermt '$yesterday 23:59:59'"
         ;;
     8)
+        # LAST 7 DAYS - Include the last 7 days INCLUDING today
         week_ago=$(date -d "7 days ago" +%Y-%m-%d)
-        DATE_FILTER="-newermt '$week_ago'"
+        DATE_FILTER="-newermt '$week_ago 00:00:00'"
         ;;
 esac
 
@@ -166,13 +169,17 @@ if [[ ! -f "$MOVE_LOG" ]]; then
     echo "timestamp,action,source_folder,target_folder,files_transferred,files_deleted,status" > "$MOVE_LOG"
 fi
 
-# Function to verify transfer
+# Function to verify transfer - FIXED VERSION
 verify_transfer() {
     local local_folder="$1"
     local expected_count="$2"
+    local transfer_start_time="$3"
     
-    # Count files that were actually copied (matching the file types we transfer)
-    local actual_count=$(find "$local_folder" -type f \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.mp4' -o -name '*.mov' \) -newer "$local_folder" 2>/dev/null | wc -l)
+    # Count files that were actually copied in this session
+    # Use the transfer start time as reference point
+    local actual_count=$(find "$local_folder" -type f \
+        \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.mp4' -o -name '*.mov' \) \
+        -newermt "$transfer_start_time" 2>/dev/null | wc -l)
     
     if [[ $actual_count -ge $expected_count ]]; then
         return 0
@@ -282,6 +289,11 @@ for folder in "${SELECTED_FOLDERS[@]}"; do
         COPY_SUCCESS=1
         if [[ $QUIET_MODE -eq 0 ]]; then
             echo -e "${GREEN}Copy completed successfully${NC}"
+        fi
+        
+        # Verify transfer using the start time
+        if ! verify_transfer "$LOCAL_FOLDER" "$FILES_TO_TRANSFER" "$COPY_START_TIME"; then
+            echo -e "${YELLOW}Warning: Transfer verification failed, but continuing with delete operation${NC}"
         fi
     else
         echo -e "${RED}Error: Copy failed. Aborting move operation for $folder.${NC}"
