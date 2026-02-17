@@ -68,6 +68,18 @@ Key settings to configure:
 - `DEVICE_USER`: Your Termux username (from `whoami`)
 - `SSH_KEY`: Path to your SSH private key
 - `LOCAL_STAGING_DIR`: Where photos are copied on your computer
+- `TRAVELING_STAGING_DIR`: Fallback when i/f network drives are unmounted (default: `/mnt/c/Users/droll/framobil`)
+
+### 4. Traveling Setup (optional)
+
+When `LOCAL_STAGING_DIR` is on `/mnt/f` or `/mnt/i` (network drives from blacktower), those drives are typically disconnected when traveling. The scripts automatically detect unmounted drives and use `TRAVELING_STAGING_DIR` instead.
+
+Create the traveling staging directory if needed:
+```bash
+mkdir -p /mnt/c/Users/droll/framobil
+```
+
+Run `validate_setup.sh` to verify traveling fallback is ready.
 
 ## Usage
 
@@ -123,6 +135,20 @@ bash list_device_photos.sh
 - List available folders on device
 - Show sample files
 
+### Traveling Mode
+
+When i/f mounts are unavailable, scripts automatically use `TRAVELING_STAGING_DIR`. A yellow notice indicates traveling mode is active. No extra steps needed.
+
+### Sync After Returning Home
+
+When back home with network drives connected, sync photos from framobil to your normal staging dir:
+
+```bash
+bash sync_traveling_photos.sh           # Copy photos to normal staging
+bash sync_traveling_photos.sh --move    # Move (frees framobil after sync)
+bash sync_traveling_photos.sh --dry-run # Preview what would be synced
+```
+
 ## Project Integration
 
 This project is designed as a modular component for larger workflows:
@@ -144,16 +170,20 @@ This project is designed as a modular component for larger workflows:
 ## File Structure
 
 ```
-/mnt/f/prog/getphotosfromphone/
+getphotosfromphone/
 ├── config.conf              # Configuration file
 ├── copy_photos.sh           # Main copy functionality
 ├── list_device_photos.sh    # Connection test and device exploration
 ├── move_photos.sh           # Copy + delete functionality
 ├── delete_copied_photos.sh  # Clean up photos from phone after copying
-├── delete_imported_photos.sh # Clean up staging area after Lightroom import (planned)
+├── sync_traveling_photos.sh # Sync framobil → normal staging when home
+├── validate_setup.sh         # Environment validation
+├── lib/
+│   └── resolve_staging_dir.sh  # Traveling fallback logic
 ├── tools/                   # Utility scripts and one-time tools
 ├── logs/                    # Private logs and original documents
 ├── copy_log_YYYY.csv        # Detailed transfer logs
+├── sync_log_YYYY.csv        # Sync operation logs
 ├── summary_YYYY.txt         # Human-readable operation summaries
 └── README.md               # This file
 ```
@@ -199,6 +229,8 @@ This project is designed as a modular component for larger workflows:
 
 - **Move functionality**: Copy photos and delete from device in one operation ✓ (implemented)
 - **Delete copied photos**: Clean up photos from phone after copying ✓ (implemented)
+- **Traveling mode**: Automatic fallback to framobil when i/f mounts unavailable ✓ (implemented)
+- **Sync traveling photos**: Copy/move photos from framobil to normal staging when home ✓ (implemented)
 - **Delete imported photos**: Clean up staging area after Lightroom import (planned)
 - **Hash-based deduplication**: Integration with larger deduplication workflows
 - **Subfolder targeting**: Direct photos to specific processing folders
@@ -215,6 +247,10 @@ This project is designed as a modular component for larger workflows:
 - Verify sufficient disk space on computer
 - Check file permissions in staging directories
 - Ensure phone doesn't go to sleep during large transfers
+
+### Traveling / Mount Issues
+- If you see "Traveling mode" when at home: connect drives first (`drive_manager connect` from network/drive_manager)
+- Sync script fails with "Target staging dir is on unmounted drive": ensure i/f mounts are available
 
 ## Contributing
 

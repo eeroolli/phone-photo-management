@@ -24,6 +24,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 source "$CONFIG_FILE"
+source "$SCRIPT_DIR/lib/resolve_staging_dir.sh"
 
 echo -e "${CYAN}=== Device Photo Explorer ===${NC}"
 echo ""

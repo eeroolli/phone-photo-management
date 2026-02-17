@@ -49,6 +49,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+source "$SCRIPT_DIR/lib/resolve_staging_dir.sh"
+
 # Test SSH connection
 if [[ $QUIET_MODE -eq 0 ]]; then
     echo "Testing connection to device..."

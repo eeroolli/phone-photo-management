@@ -60,6 +60,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+source "$SCRIPT_DIR/lib/resolve_staging_dir.sh"
+
 # Initialize delete log if needed
 DELETE_LOG="${SCRIPT_DIR}/delete_log_$(date +%Y).csv"
 if [[ ! -f "$DELETE_LOG" ]]; then

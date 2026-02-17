@@ -22,6 +22,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 source "$CONFIG_FILE"
+source "$SCRIPT_DIR/lib/resolve_staging_dir.sh"
 
 # Test SSH connection
 echo "Testing connection to device..."
