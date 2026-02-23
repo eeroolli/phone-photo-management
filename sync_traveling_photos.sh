@@ -16,8 +16,8 @@ YELLOW='\033[1;33m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_FILE="$SCRIPT_DIR/config.conf"
+PROJ_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$PROJ_DIR/config.conf"
 
 if [ ! -f "$CONFIG_FILE" ]; then
     echo -e "${RED}Error: Config file $CONFIG_FILE not found!${NC}"
@@ -126,7 +126,7 @@ if [[ $MOVE_MODE -eq 1 ]] && [[ $DRY_RUN -eq 0 ]]; then
 fi
 
 # Log
-SYNC_LOG="${SCRIPT_DIR}/sync_log_$(date +%Y).csv"
+SYNC_LOG="${PROJ_DIR}/sync_log_$(date +%Y).csv"
 [[ ! -f "$SYNC_LOG" ]] && echo "timestamp,source,target,files_synced,mode,status" > "$SYNC_LOG"
 _timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 _mode="copy"; [[ $MOVE_MODE -eq 1 ]] && _mode="move"; [[ $DRY_RUN -eq 1 ]] && _mode="dry-run"

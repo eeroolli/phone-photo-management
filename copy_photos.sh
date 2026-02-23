@@ -13,8 +13,8 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Source config
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_FILE="$SCRIPT_DIR/config.conf"
+PROJ_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$PROJ_DIR/config.conf"
 
 if [ ! -f "$CONFIG_FILE" ]; then
     echo -e "${RED}Error: Config file $CONFIG_FILE not found!${NC}"
@@ -22,7 +22,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 source "$CONFIG_FILE"
-source "$SCRIPT_DIR/lib/resolve_staging_dir.sh"
+source "$PROJ_DIR/lib/resolve_staging_dir.sh"
 
 # Test SSH connection
 echo "Testing connection to device..."
