@@ -10,6 +10,8 @@ fi
 
 source "$CONFIG_FILE"
 source "$PROJ_DIR/lib/resolve_staging_dir.sh"
+source "$PROJ_DIR/lib/find_media_extensions.sh"
+source "$PROJ_DIR/lib/photo_hash_state.sh"
 
 echo "🔍 Validating environment..."
 echo "✓ SSH key exists: $(test -f "$SSH_KEY" && echo "YES" || echo "❌ NO")"
@@ -21,3 +23,24 @@ echo "✓ Traveling fallback ready: $(test -d "$_traveling_dir" && echo "YES" ||
 echo "✓ /mnt/f mounted: $(mountpoint -q /mnt/f 2>/dev/null && echo "YES" || echo "NO")"
 echo "✓ /mnt/i mounted: $(mountpoint -q /mnt/i 2>/dev/null && echo "YES" || echo "NO")"
 echo "✓ Can ping device: $(ping -c1 -W1 "$DEVICE_IP" &>/dev/null && echo "YES" || echo "❌ NO")"
+echo "✓ sha256sum: $(command -v sha256sum >/dev/null && echo "YES" || echo "❌ NO")"
+
+if photo_hash_state_enabled; then
+    _hs="$(photo_hash_state_pipeline_root)" || true
+    if [[ -n "$_hs" ]]; then
+        echo "✓ Hash state dir (pipeline root): $_hs"
+        if mkdir -p "$_hs/audit" 2>/dev/null && touch "$_hs/.validate_write" 2>/dev/null; then
+            rm -f "$_hs/.validate_write"
+            echo "✓ Hash state dir writable: YES"
+        else
+            echo "✓ Hash state dir writable: ❌ NO"
+        fi
+    fi
+    if [[ -n "${LIGHTROOM_IMPORTED_ROOT:-}" ]]; then
+        echo "✓ LIGHTROOM_IMPORTED_ROOT readable: $(test -r "$LIGHTROOM_IMPORTED_ROOT" && echo "YES" || echo "NO (optional for build_import_index)")"
+    else
+        echo "○ LIGHTROOM_IMPORTED_ROOT unset (set for build_import_index.sh)"
+    fi
+else
+    echo "○ Hash registry disabled (set PHOTO_HASH_STATE_DIR + HASH_PIPELINE_SLUG to enable)"
+fi

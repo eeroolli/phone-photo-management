@@ -205,7 +205,8 @@ for folder in "${SELECTED_FOLDERS[@]}"; do
     # Get file list
     echo "Scanning files on device..."
     FILE_LIST=$(ssh -i "$SSH_KEY" -p "$DEVICE_PORT" "$DEVICE_USER@$DEVICE_IP" "$FIND_CMD" | sort)
-    FILE_COUNT=$(echo "$FILE_LIST" | grep -c . || echo "0")
+    FILE_COUNT=$(echo "$FILE_LIST" | grep -c . 2>/dev/null || true)
+    FILE_COUNT=${FILE_COUNT:-0}
     
     if [[ $FILE_COUNT -eq 0 ]]; then
         echo -e "${YELLOW}No files found in $folder matching criteria${NC}"

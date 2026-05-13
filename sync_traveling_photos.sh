@@ -25,6 +25,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 source "$CONFIG_FILE"
+source "$PROJ_DIR/lib/find_media_extensions.sh"
 
 # Save configured target before resolver may change it
 TARGET_DIR="$LOCAL_STAGING_DIR"
@@ -78,7 +79,7 @@ if [[ ! -d "$SOURCE_DIR" ]]; then
     exit 0
 fi
 
-_photo_count=$(find "$SOURCE_DIR" -type f \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.mp4' -o -name '*.mov' \) 2>/dev/null | wc -l)
+_photo_count=$(find "$SOURCE_DIR" -type f $FIND_MEDIA_INAME_PREDICATE 2>/dev/null | wc -l)
 if [[ $_photo_count -eq 0 ]]; then
     if [[ $QUIET_MODE -eq 0 ]]; then
         echo -e "${YELLOW}No photos found in $SOURCE_DIR. Nothing to sync.${NC}"
@@ -120,7 +121,7 @@ if [[ $MOVE_MODE -eq 1 ]] && [[ $DRY_RUN -eq 0 ]]; then
     if [[ $QUIET_MODE -eq 0 ]]; then
         echo -e "${WHITE}Removing synced files from source...${NC}"
     fi
-    find "$SOURCE_DIR" -type f \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.mp4' -o -name '*.mov' \) -delete 2>/dev/null || true
+    find "$SOURCE_DIR" -type f $FIND_MEDIA_INAME_PREDICATE -delete 2>/dev/null || true
     # Remove empty dirs
     find "$SOURCE_DIR" -type d -empty -delete 2>/dev/null || true
 fi

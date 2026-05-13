@@ -22,8 +22,8 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 source "$CONFIG_FILE"
-
-# Command line options for integration
+source "$PROJ_DIR/lib/find_media_extensions.sh"
+source "$PROJ_DIR/lib/photo_hash_state.sh"
 CUSTOM_TARGET=""
 QUIET_MODE=0
 DEBUG_MODE=0
@@ -95,7 +95,7 @@ fi
 if [[ $QUIET_MODE -eq 0 ]]; then
     echo -e "${WHITE}Date filtering options:${NC}"
     echo "  1) All files"
-    echo "  2) Since last copy (including last copy timestamp)"
+    echo "  2) Since last copy (uses $COPY_LOG)"
     echo "  3) Files from date onwards (INCLUDING the start date)"
     echo "  4) Files up to date (INCLUDING the end date)"
     echo "  5) Files between two dates (INCLUDING both start and end dates)"
@@ -117,13 +117,13 @@ fi
 DATE_FILTER=""
 case $date_option in
     2)
-        # Since last move - includes the exact timestamp
-        if [[ -f "$MOVE_LOG" ]]; then
-            LAST_MOVE=$(tail -1 "$MOVE_LOG" | cut -d',' -f1)
-            if [[ -n "$LAST_MOVE" ]]; then
-                DATE_FILTER="-newermt '$LAST_MOVE'"
+        # Since last copy — same log and field as copy_photos.sh
+        if [[ -f "$COPY_LOG" ]]; then
+            LAST_COPY=$(tail -1 "$COPY_LOG" | cut -d',' -f1)
+            if [[ -n "$LAST_COPY" ]]; then
+                DATE_FILTER="-newermt '$LAST_COPY'"
                 if [[ $QUIET_MODE -eq 0 ]]; then
-                    echo -e "${BLUE}Using files since last move: $LAST_MOVE${NC}"
+                    echo -e "${BLUE}Using files since last copy: $LAST_COPY${NC}"
                 fi
             fi
         fi
@@ -182,7 +182,7 @@ generate_filtered_file_list() {
     local date_filter="$2"
     
     # Build find command with date filter
-    local find_cmd="find '$DEVICE_PHOTO_DIR/$folder' -type f \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.mp4' -o -name '*.mov' \) $date_filter"
+    local find_cmd="find '$DEVICE_PHOTO_DIR/$folder' -type f $FIND_MEDIA_INAME_PREDICATE $date_filter"
     
     # Get filtered list from device
     FILTERED_FILE_LIST=$(ssh -i "$SSH_KEY" -p "$DEVICE_PORT" "$DEVICE_USER@$DEVICE_IP" "$find_cmd" | sort)
@@ -240,6 +240,10 @@ process_files_with_operation() {
         echo "DEBUG: End of file contents" >&2
     fi
     
+    if photo_hash_state_enabled && [[ "$operation" == "move" ]]; then
+        photo_hash_state_init || true
+    fi
+    
     while IFS= read -r device_file <&3; do
         if [[ -n "$device_file" ]]; then
             filename=$(basename "$device_file")
@@ -281,6 +285,25 @@ process_files_with_operation() {
                         
                         # Delete from device if move operation
                         if [[ "$operation" == "move" ]]; then
+                            _do_delete=1
+                            if photo_hash_state_enabled; then
+                                if ! _sha=$(photo_hash_local_file "$local_file"); then
+                                    _do_delete=0
+                                    if [[ $QUIET_MODE -eq 0 ]]; then
+                                        echo -e "${YELLOW}Hash failed — not deleting from device: $filename${NC}" >&2
+                                    fi
+                                elif photo_hash_registry_has_sha256 "$_sha"; then
+                                    _do_delete=0
+                                    if [[ $QUIET_MODE -eq 0 ]]; then
+                                        echo -e "${YELLOW}Hash already in registry — skipping phone delete: $filename${NC}" >&2
+                                    fi
+                                else
+                                    _sz=$(stat -c%s "$local_file" 2>/dev/null || echo 0)
+                                    photo_hash_registry_put_sha256 "$_sha" "move" "$local_file"
+                                    photo_hash_append_transfer_audit "move" "$device_file" "$local_file" "$_sha" "$_sz"
+                                fi
+                            fi
+                            if [[ $_do_delete -eq 1 ]]; then
                             if [[ $QUIET_MODE -eq 0 ]]; then
                                 echo -n "Deleting: $filename ... " >&2
                             fi
@@ -294,6 +317,7 @@ process_files_with_operation() {
                                 if [[ $QUIET_MODE -eq 0 ]]; then
                                     echo -e "${RED}✗${NC}" >&2
                                 fi
+                            fi
                             fi
                         fi
                     else
@@ -319,8 +343,7 @@ verify_transfer() {
     
     # Count files that were actually copied in this session
     # Use the transfer start time as reference point
-    local actual_count=$(find "$local_folder" -type f \
-        \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.mp4' -o -name '*.mov' \) \
+    local actual_count=$(find "$local_folder" -type f $FIND_MEDIA_INAME_PREDICATE \
         -newermt "$transfer_start_time" 2>/dev/null | wc -l)
     
     if [[ $actual_count -ge $expected_count ]]; then

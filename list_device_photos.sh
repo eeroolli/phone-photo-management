@@ -24,6 +24,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 source "$CONFIG_FILE"
+source "$PROJ_DIR/lib/find_media_extensions.sh"
 source "$PROJ_DIR/lib/resolve_staging_dir.sh"
 
 echo -e "${CYAN}=== Device Photo Explorer ===${NC}"
@@ -57,7 +58,7 @@ if [[ -n "$FOLDERS" ]]; then
         
         # Count files by type
         echo -e "${WHITE}File count by type in Camera:${NC}"
-        ssh -i "$SSH_KEY" -p "$DEVICE_PORT" "$DEVICE_USER@$DEVICE_IP" "cd $DEVICE_PHOTO_DIR/Camera && echo 'JPG/JPEG: ' \$(find . -name '*.jpg' -o -name '*.jpeg' | wc -l) && echo 'PNG: ' \$(find . -name '*.png' | wc -l) && echo 'MP4: ' \$(find . -name '*.mp4' | wc -l) && echo 'MOV: ' \$(find . -name '*.mov' | wc -l)"
+        ssh -i "$SSH_KEY" -p "$DEVICE_PORT" "$DEVICE_USER@$DEVICE_IP" "cd $DEVICE_PHOTO_DIR/Camera && echo 'Media files (MEDIA_EXTENSIONS): ' \$(find . -type f $FIND_MEDIA_INAME_PREDICATE | wc -l)"
     fi
 else
     echo -e "${YELLOW}No folders found in $DEVICE_PHOTO_DIR${NC}"

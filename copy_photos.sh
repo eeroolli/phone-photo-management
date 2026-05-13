@@ -23,6 +23,8 @@ fi
 
 source "$CONFIG_FILE"
 source "$PROJ_DIR/lib/resolve_staging_dir.sh"
+source "$PROJ_DIR/lib/find_media_extensions.sh"
+source "$PROJ_DIR/lib/photo_hash_state.sh"
 
 # Test SSH connection
 echo "Testing connection to device..."
@@ -127,12 +129,13 @@ for folder in "${SELECTED_FOLDERS[@]}"; do
     mkdir -p "$LOCAL_FOLDER"
     
     # Build find command with proper parentheses
-    FIND_CMD="find '$DEVICE_FOLDER' -type f \( -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.mp4' -o -name '*.mov' \) $DATE_FILTER"
+    FIND_CMD="find '$DEVICE_FOLDER' -type f $FIND_MEDIA_INAME_PREDICATE $DATE_FILTER"
     
     # Get file list
     echo "Scanning files on device..."
     FILE_LIST=$(ssh -i "$SSH_KEY" -p "$DEVICE_PORT" "$DEVICE_USER@$DEVICE_IP" "$FIND_CMD" | sort)
-    FILE_COUNT=$(echo "$FILE_LIST" | grep -c . || echo "0")
+    FILE_COUNT=$(echo "$FILE_LIST" | grep -c . 2>/dev/null || true)
+    FILE_COUNT=${FILE_COUNT:-0}
     
     if [[ $FILE_COUNT -eq 0 ]]; then
         echo -e "${YELLOW}No files found in $folder matching criteria${NC}"
@@ -151,20 +154,45 @@ for folder in "${SELECTED_FOLDERS[@]}"; do
         echo -e "${RED}Skipped $folder${NC}"
         continue
     fi
+
+    if [[ -n "${PHOTO_HASH_STATE_DIR:-}" && -n "${HASH_PIPELINE_SLUG:-}" ]]; then
+        photo_hash_state_init
+    fi
     
     # Perform copy using rsync
     echo -e "${GREEN}Copying files from $folder...${NC}"
-    rsync -av --progress \
+    if rsync -av --progress \
         -e "ssh -i $SSH_KEY -p $DEVICE_PORT" \
         "$DEVICE_USER@$DEVICE_IP:$DEVICE_FOLDER/" \
-        "$LOCAL_FOLDER/"
-    
-    if [[ $? -eq 0 ]]; then
+        "$LOCAL_FOLDER/"; then
         echo -e "${GREEN}Successfully copied files from $folder${NC}"
         
         # Log the operation
         timestamp=$(date '+%Y-%m-%d %H:%M:%S')
         echo "$timestamp,copy,$DEVICE_FOLDER,$LOCAL_FOLDER,$FILE_COUNT files" >> "$COPY_LOG"
+
+        if [[ -n "${PHOTO_HASH_STATE_DIR:-}" && -n "${HASH_PIPELINE_SLUG:-}" ]]; then
+            _audit_n=0
+            while IFS= read -r _devpath; do
+                [[ -z "$_devpath" ]] && continue
+                _rel="${_devpath#${DEVICE_FOLDER}/}"
+                _loc="$LOCAL_FOLDER/$_rel"
+                if [[ -f "$_loc" ]]; then
+                    _sha=$(photo_hash_local_file "$_loc") || continue
+                    if photo_hash_registry_has_sha256 "$_sha"; then
+                        if awk -F'\t' -v s="$_sha" 'BEGIN{f=0} $1==s && $2=="import"{f=1} END{exit !f}' "$(photo_hash_registry_path)"; then
+                            echo -e "${YELLOW}Already in import index (hash): $(basename "$_loc")${NC}"
+                        fi
+                    else
+                        _sz=$(stat -c%s "$_loc" 2>/dev/null || echo 0)
+                        photo_hash_registry_put_sha256 "$_sha" "copy" "$_loc"
+                        photo_hash_append_transfer_audit "copy" "$_devpath" "$_loc" "$_sha" "$_sz"
+                        _audit_n=$((_audit_n + 1))
+                    fi
+                fi
+            done <<< "$FILE_LIST"
+            [[ $_audit_n -gt 0 ]] && echo -e "${BLUE}Hash registry: recorded $_audit_n new file(s) for this folder.${NC}"
+        fi
     else
         echo -e "${RED}Error copying files from $folder${NC}"
     fi
