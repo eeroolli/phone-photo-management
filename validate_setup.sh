@@ -29,8 +29,7 @@ if photo_hash_state_enabled; then
     _hs="$(photo_hash_state_pipeline_root)" || true
     if [[ -n "$_hs" ]]; then
         echo "✓ Hash state dir (pipeline root): $_hs"
-        if mkdir -p "$_hs/audit" 2>/dev/null && touch "$_hs/.validate_write" 2>/dev/null; then
-            rm -f "$_hs/.validate_write"
+        if photo_hash_state_ensure_writable; then
             echo "✓ Hash state dir writable: YES"
         else
             echo "✓ Hash state dir writable: ❌ NO"

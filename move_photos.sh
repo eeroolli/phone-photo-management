@@ -343,7 +343,7 @@ verify_transfer() {
     
     # Count files that were actually copied in this session
     # Use the transfer start time as reference point
-    local actual_count=$(find "$local_folder" -type f $FIND_MEDIA_INAME_PREDICATE \
+    local actual_count=$(find "$local_folder" -type f "${FIND_MEDIA_FIND_ARGS[@]}" \
         -newermt "$transfer_start_time" 2>/dev/null | wc -l)
     
     if [[ $actual_count -ge $expected_count ]]; then

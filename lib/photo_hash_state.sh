@@ -16,9 +16,28 @@ photo_hash_state_pipeline_root() {
     printf '%s' "${PHOTO_HASH_STATE_DIR%/}/${HASH_PIPELINE_SLUG}"
 }
 
+# Exit 1 with a clear message if pipeline state dir is not creatable/writable.
+photo_hash_state_ensure_writable() {
+    local root
+    root="$(photo_hash_state_pipeline_root)" || {
+        echo "photo_hash_state: PHOTO_HASH_STATE_DIR and HASH_PIPELINE_SLUG must be set" >&2
+        return 1
+    }
+    if ! mkdir -p "$root/audit" 2>/dev/null; then
+        echo "photo_hash_state: cannot create hash state directory under $root (check PHOTO_HASH_STATE_DIR=$PHOTO_HASH_STATE_DIR)" >&2
+        return 1
+    fi
+    if ! touch "$root/.write_test" 2>/dev/null; then
+        echo "photo_hash_state: hash state directory not writable: $root" >&2
+        return 1
+    fi
+    rm -f "$root/.write_test"
+}
+
 photo_hash_state_init() {
     local root
     root="$(photo_hash_state_pipeline_root)" || return 1
+    photo_hash_state_ensure_writable || return 1
     mkdir -p "$root/audit"
     local reg="$root/registry_known.tsv"
     if [[ ! -f "$reg" ]]; then

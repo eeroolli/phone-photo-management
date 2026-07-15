@@ -46,16 +46,10 @@ if [[ -n "${LIGHTROOM_IMPORTED_ROOT_EXTRA:-}" && ! -d "$LIGHTROOM_IMPORTED_ROOT_
     exit 1
 fi
 
-_root_test="$(photo_hash_state_pipeline_root)"
-if ! mkdir -p "$_root_test/audit" 2>/dev/null; then
-    echo -e "${RED}Error: cannot create state directory under $_root_test${NC}"
+if ! photo_hash_state_ensure_writable; then
+    echo -e "${RED}Error: cannot create or write hash state directory (check PHOTO_HASH_STATE_DIR in config.conf)${NC}"
     exit 1
 fi
-if ! touch "$_root_test/.write_test" 2>/dev/null; then
-    echo -e "${RED}Error: state directory not writable: $_root_test${NC}"
-    exit 1
-fi
-rm -f "$_root_test/.write_test"
 
 photo_hash_state_init
 
@@ -84,11 +78,18 @@ process_file() {
 while IFS= read -r -d '' f; do
     process_file "$f"
 done < <(
-    find "$LIGHTROOM_IMPORTED_ROOT" -type f $FIND_MEDIA_INAME_PREDICATE -print0 2>/dev/null
+    find "$LIGHTROOM_IMPORTED_ROOT" -type f "${FIND_MEDIA_FIND_ARGS[@]}" -print0
     if [[ -n "${LIGHTROOM_IMPORTED_ROOT_EXTRA:-}" ]]; then
-        find "$LIGHTROOM_IMPORTED_ROOT_EXTRA" -type f $FIND_MEDIA_INAME_PREDICATE -print0 2>/dev/null
+        find "$LIGHTROOM_IMPORTED_ROOT_EXTRA" -type f "${FIND_MEDIA_FIND_ARGS[@]}" -print0
     fi
 )
 
 echo ""
+if [[ $_processed -eq 0 ]]; then
+    _probe=$(find "$LIGHTROOM_IMPORTED_ROOT" -type f -iname '*.jpg' 2>/dev/null | head -1 || true)
+    if [[ -n "$_probe" ]]; then
+        echo -e "${YELLOW}Warning: 0 media files hashed, but jpg files exist under the import root.${NC}"
+        echo -e "${YELLOW}         Check MEDIA_EXTENSIONS in config.conf or find errors above.${NC}"
+    fi
+fi
 echo -e "${GREEN}Done. Total files hashed: $_processed${NC}"

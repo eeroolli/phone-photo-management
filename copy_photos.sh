@@ -26,6 +26,15 @@ source "$PROJ_DIR/lib/resolve_staging_dir.sh"
 source "$PROJ_DIR/lib/find_media_extensions.sh"
 source "$PROJ_DIR/lib/photo_hash_state.sh"
 
+if photo_hash_state_enabled; then
+    if ! photo_hash_state_ensure_writable; then
+        echo -e "${RED}Error: Hash registry is enabled but not writable.${NC}"
+        echo -e "${YELLOW}Fix PHOTO_HASH_STATE_DIR in config.conf (use a local path, not /mnt/p), or unset PHOTO_HASH_STATE_DIR and HASH_PIPELINE_SLUG to disable.${NC}"
+        exit 1
+    fi
+    photo_hash_state_init
+fi
+
 # Test SSH connection
 echo "Testing connection to device..."
 if ! ssh -i "$SSH_KEY" -p "$DEVICE_PORT" -o ConnectTimeout=5 "$DEVICE_USER@$DEVICE_IP" 'echo "Connection OK"' >/dev/null 2>&1; then
@@ -155,10 +164,6 @@ for folder in "${SELECTED_FOLDERS[@]}"; do
         continue
     fi
 
-    if [[ -n "${PHOTO_HASH_STATE_DIR:-}" && -n "${HASH_PIPELINE_SLUG:-}" ]]; then
-        photo_hash_state_init
-    fi
-    
     # Perform copy using rsync
     echo -e "${GREEN}Copying files from $folder...${NC}"
     if rsync -av --progress \

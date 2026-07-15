@@ -41,6 +41,7 @@ Thumbs.db
 # Personal data directories
 logs/
 temp/
+photo_hash_state/
 
 # Original project transfer documents (contain personal data)
 PROJECT_TRANSFER_ORIGINAL.md
