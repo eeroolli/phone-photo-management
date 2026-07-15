@@ -70,6 +70,7 @@ Key settings to configure:
 - `LOCAL_STAGING_DIR`: Where photos are copied on your computer
 - `MEDIA_EXTENSIONS`: Space-separated extensions (no dots) used by find across scripts
 - `PHOTO_HASH_STATE_DIR`, `HASH_PIPELINE_SLUG`, `LIGHTROOM_IMPORTED_ROOT`: Optional hash registry and import index (see below)
+- `PROJ_DIR`: Repo root (parent of `scripts/` and `lib/`)
 - `TRAVELING_STAGING_DIR`: Fallback when i/f network drives are unmounted (default: `/mnt/c/Users/droll/framobil`)
 
 ### 4. Traveling Setup (optional)
@@ -81,7 +82,7 @@ Create the traveling staging directory if needed:
 mkdir -p /mnt/c/Users/droll/framobil
 ```
 
-Run `validate_setup.sh` to verify traveling fallback is ready.
+Run `bash scripts/validate_setup.sh` to verify traveling fallback is ready.
 
 ### Hash registry and import index (optional)
 
@@ -92,10 +93,10 @@ If **`PHOTO_HASH_STATE_DIR`** and **`HASH_PIPELINE_SLUG`** are set in `config.co
 - **Move:** If a file’s hash is already in the registry after copy, the device file is **not** deleted (avoids removing the only instance when the file is already in the indexed import tree).
 - **Logs:** `copy_log_*.csv` / `move_log_*.csv` are unchanged; audit/registry add per-file detail. Old runs are not backfilled.
 
-First run: set variables, `bash validate_setup.sh`, then:
+First run: set variables, `bash scripts/validate_setup.sh`, then:
 
 ```bash
-bash build_import_index.sh
+bash scripts/build_import_index.sh
 ```
 
 …once per import tree, then use copy/move with the same slug.
@@ -104,7 +105,7 @@ bash build_import_index.sh
 
 ### Basic Photo Copy
 ```bash
-bash copy_photos.sh
+bash scripts/copy_photos.sh
 ```
 - Select folders to process
 - Choose from 8 date filtering options (All files, Since last copy, Date ranges, Today, Yesterday, Last 7 days)
@@ -130,7 +131,7 @@ All scripts now use consistent date filtering options with clear inclusivity/exc
 
 #### Option 1: Copy + Delete in One Operation
 ```bash
-bash move_photos.sh
+bash scripts/move_photos.sh
 ```
 - Copies photos AND deletes them from phone after successful transfer
 - Best for freeing up phone storage immediately
@@ -138,19 +139,19 @@ bash move_photos.sh
 #### Option 2: Copy First, Then Clean Up Later
 ```bash
 # Step 1: Copy photos
-bash copy_photos.sh
+bash scripts/copy_photos.sh
 
 # Step 2: Clean up phone storage (after verifying copy success)
-bash delete_already_copied_photos.sh
+bash scripts/delete_already_copied_photos.sh
 ```
 - Safer approach - copy first, verify, then delete
 - Good for when you want to double-check before deleting
 
 ### Device overview and duplicate check
 ```bash
-bash overview_device_photos.sh
+bash scripts/overview_device_photos.sh
 # Or target a folder by name, e.g. Album Adidas (under DCIM or Pictures):
-bash overview_device_photos.sh Adidas
+bash scripts/overview_device_photos.sh Adidas
 ```
 - Lists folders in `DEVICE_PHOTO_DIR` (DCIM) and optionally `DEVICE_PICTURES_DIR` (Pictures)
 - Pick a folder to see total file count and **duplicate analysis by file size**
@@ -158,28 +159,28 @@ bash overview_device_photos.sh Adidas
 
 ### Cross-folder duplicate cleanup (Adidas / by filename)
 ```bash
-bash find_cross_folder_duplicates.sh
+bash scripts/find_cross_folder_duplicates.sh
 ```
 - **Target folder** (e.g. Adidas): files here are compared by **filename** to reference folders (e.g. DCIM).
-- **Duplicates** (same name in reference): listed in `duplicates_to_remove.txt`; script can **delete** them on the device.
+- **Duplicates** (same name in reference): listed in `logs/duplicates_to_remove.txt`; script can **delete** them on the device.
 - **Non-duplicates**: script can **move** them out of the target folder to a destination (e.g. parent folder).
 - Configure `CROSS_DUP_TARGET_DIR`, `CROSS_DUP_REFERENCE_DIRS` in `config.conf` if needed.
 - **Move rules in the script**: When you apply cleanup, you define **one pattern at a time** and its **destination folder** (e.g. `IMG*` → OpenCamera, `VID*` → OpenCamera, `Screenshot*` → Screenshots). Empty pattern to finish. Files not matching any pattern stay in the target folder.
 - **Redmi/Xiaomi Gallery**: Photos are under `Pictures/Gallery`. Album folder names often have a **trailing space** (e.g. `Adidas `, `owner `). The script tries the path with trailing space automatically if it finds 0 files; you can also set `CROSS_DUP_TARGET_DIR` to the exact path (including the space) in config.
 - After the report you are prompted: *Apply cleanup? Delete duplicates and move non-duplicates (y/N)*.
 - Use **`--dry-run`** (or **`-n`**) to simulate: no changes on device, but actions are written to the log.
-- All delete/move actions are appended to a log file (default: `cross_dup_YYYYMMDD.log` in the script dir; set `CROSS_DUP_LOG` to override). Log lines: `delete	<path>` or `move	<path>	<dest>` (dry-run uses `would_delete` / `would_move`).
+- All delete/move actions are appended to a log file (default: `logs/cross_dup_YYYYMMDD.log`; set `CROSS_DUP_LOG` in config to override). Log lines: `delete	<path>` or `move	<path>	<dest>` (dry-run uses `would_delete` / `would_move`).
 
 ### SSH to phone
 ```bash
-bash ssh_phone.sh              # Interactive shell on phone (Termux)
-bash ssh_phone.sh "ls /storage/emulated/0/DCIM"   # Run a single command
+bash scripts/ssh_phone.sh              # Interactive shell on phone (Termux)
+bash scripts/ssh_phone.sh "ls /storage/emulated/0/DCIM"   # Run a single command
 ```
 Uses `config.conf` (DEVICE_IP, DEVICE_USER, SSH_KEY, DEVICE_PORT).
 
 ### Connection Test
 ```bash
-bash list_device_photos.sh
+bash scripts/list_device_photos.sh
 ```
 - Verify SSH connection
 - List available folders on device
@@ -194,9 +195,9 @@ When i/f mounts are unavailable, scripts automatically use `TRAVELING_STAGING_DI
 When back home with network drives connected, sync photos from framobil to your normal staging dir:
 
 ```bash
-bash sync_traveling_photos.sh           # Copy photos to normal staging
-bash sync_traveling_photos.sh --move    # Move (frees framobil after sync)
-bash sync_traveling_photos.sh --dry-run # Preview what would be synced
+bash scripts/sync_traveling_photos.sh           # Copy photos to normal staging
+bash scripts/sync_traveling_photos.sh --move    # Move (frees framobil after sync)
+bash scripts/sync_traveling_photos.sh --dry-run # Preview what would be synced
 ```
 
 ## Project Integration
@@ -221,37 +222,48 @@ This project is designed as a modular component for larger workflows:
 
 ```
 getphotosfromphone/
-├── config.conf              # Configuration file
-├── copy_photos.sh           # Main copy functionality
-├── ssh_phone.sh             # SSH into phone (uses config)
-├── list_device_photos.sh    # Connection test and device exploration
-├── move_photos.sh           # Copy + delete functionality
-├── delete_already_copied_photos.sh  # Clean up phone files already present on PC staging
-├── sync_traveling_photos.sh # Sync framobil → normal staging when home
-├── validate_setup.sh         # Environment validation
-├── build_import_index.sh    # Hash files under LIGHTROOM_IMPORTED_ROOT into the pipeline registry
-├── lib/
-│   ├── resolve_staging_dir.sh    # Traveling fallback logic
-│   ├── find_media_extensions.sh # MEDIA_EXTENSIONS → find -iname predicate (shared)
-│   └── photo_hash_state.sh      # Registry + transfer audit helpers (optional)
-├── phone_scripts/          # Scripts that run on the phone (e.g. in Termux), not on the computer
-├── tools/                   # Utility scripts and one-time tools
-├── logs/                    # Private logs and original documents
-├── copy_log_YYYY.csv        # Detailed transfer logs
-├── sync_log_YYYY.csv        # Sync operation logs
-├── summary_YYYY.txt         # Human-readable operation summaries
-└── README.md               # This file
+├── README.md                # This file
+├── config.example.conf      # Configuration template
+├── config.conf              # Your settings (gitignored)
+├── lib/                     # Shared libraries
+│   ├── resolve_staging_dir.sh
+│   ├── find_media_extensions.sh
+│   └── photo_hash_state.sh
+├── scripts/                 # Entry-point scripts
+│   ├── copy_photos.sh
+│   ├── move_photos.sh
+│   ├── delete_already_copied_photos.sh
+│   ├── sync_traveling_photos.sh
+│   ├── build_import_index.sh
+│   ├── validate_setup.sh
+│   ├── list_device_photos.sh
+│   ├── overview_device_photos.sh
+│   ├── find_cross_folder_duplicates.sh
+│   └── ssh_phone.sh
+├── logs/                    # Runtime logs (gitignored)
+├── old/                     # Historical docs and one-off tools
+│   ├── PROJECT_TRANSFER_SANITIZED.md
+│   ├── tools/
+│   └── phone_scripts/
+└── photo_hash_state/        # Hash registry runtime data (gitignored)
 ```
 
 ## Logging
 
-### Human-Readable Logs
-- `summary_YYYY.txt`: Operation summaries, file counts, user actions
-- Console output with colored status messages
+Runtime logs are written under `logs/` (gitignored). Set `PROJ_DIR` in `config.conf` so log paths resolve correctly.
 
-### Detailed Logs
-- `copy_log_YYYY.csv`: CSV format with timestamp, action, paths, file counts
-- Machine-readable for analysis and integration
+### Console output
+- Colored status messages during script runs
+
+### CSV and action logs (under `logs/`)
+- `copy_log_YYYY.csv`: Copy operations — timestamp, action, paths, file counts
+- `move_log_YYYY.csv`: Move operations
+- `delete_log_YYYY.csv`: Delete-on-device operations
+- `sync_log_YYYY.csv`: Traveling sync operations
+- `cross_dup_YYYYMMDD.log`: Cross-folder duplicate cleanup actions
+- `duplicates_to_remove.txt`: Report from cross-folder duplicate scan (regenerated each run)
+
+Note: `summary_YYYY.txt` is defined in config but not written by any script today.
 
 ## Safety Features
 
@@ -264,19 +276,19 @@ getphotosfromphone/
 ## Workflow Examples
 
 ### Daily Photo Import
-1. Run `copy_photos.sh` with "since last copy" option
+1. Run `scripts/copy_photos.sh` with "since last copy" option
 2. Import new photos into Lightroom
 3. Run deduplication process (separate project)
 4. Clean up staging area with `delete_imported_photos.sh` (planned)
 
 ### Phone Storage Cleanup
-1. Run `copy_photos.sh` to copy photos to computer
+1. Run `scripts/copy_photos.sh` to copy photos to computer
 2. Verify photos copied successfully
-3. Run `delete_already_copied_photos.sh` to free up phone storage
+3. Run `scripts/delete_already_copied_photos.sh` to free up phone storage
 
 ### Book Photo Processing
 1. Take photos of books with phone
-2. Run `copy_photos.sh` targeting Books subfolder
+2. Run `scripts/copy_photos.sh` targeting Books subfolder
 3. Run OCR processing script (separate project)
 4. Extract ISBNs and add to Zotero (separate project)
 
@@ -306,6 +318,18 @@ getphotosfromphone/
 ### Traveling / Mount Issues
 - If you see "Traveling mode" when at home: connect drives first (`drive_manager connect` from network/drive_manager)
 - Sync script fails with "Target staging dir is on unmounted drive": ensure i/f mounts are available
+
+## Migration (July 2026 reorganization)
+
+If you used the repo before scripts moved under `scripts/`:
+
+1. **`config.conf` stays at repo root** — add or set `PROJ_DIR` to the repo root and point log variables to `$PROJ_DIR/logs/...` (see `config.example.conf`)
+2. **Run scripts from `scripts/`** — e.g. `bash scripts/copy_photos.sh` instead of `bash copy_photos.sh`
+3. **Update shortcuts** — point Windows/shell shortcuts at `scripts/copy_photos.sh` (or your usual entry script)
+4. **Optional:** move existing root-level `*_log_*.csv` and `cross_dup_*.log` into `logs/`
+5. **Verify:** `bash scripts/validate_setup.sh`
+
+Historical material (transfer docs, one-off tools) is under `old/`.
 
 ## Contributing
 

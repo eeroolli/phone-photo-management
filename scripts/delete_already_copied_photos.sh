@@ -12,7 +12,8 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-PROJ_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJ_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONFIG_FILE="$PROJ_DIR/config.conf"
 
 if [[ ! -f "$CONFIG_FILE" ]]; then
@@ -59,7 +60,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-DELETE_LOG="${SCRIPT_DIR:-$PROJ_DIR}/delete_log_$(date +%Y).csv"
+DELETE_LOG="${DELETE_LOG:-$PROJ_DIR/logs/delete_log_$(date +%Y).csv}"
 if [[ ! -f "$DELETE_LOG" ]]; then
     echo "timestamp,action,device_folder,files_found,files_verified,files_deleted,status" > "$DELETE_LOG"
 fi

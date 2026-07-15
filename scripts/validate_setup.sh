@@ -1,6 +1,7 @@
 #!/bin/bash
 # validate_setup.sh - Quick environment check
-PROJ_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJ_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONFIG_FILE="$PROJ_DIR/config.conf"
 
 if [ ! -f "$CONFIG_FILE" ]; then

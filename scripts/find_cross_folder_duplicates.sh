@@ -27,7 +27,8 @@ for arg in "$@"; do
     fi
 done
 
-PROJ_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJ_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONFIG_FILE="$PROJ_DIR/config.conf"
 
 if [ ! -f "$CONFIG_FILE" ]; then
@@ -42,7 +43,7 @@ source "$PROJ_DIR/lib/find_media_extensions.sh"
 TARGET_DIR="${CROSS_DUP_TARGET_DIR:-/storage/emulated/0/Pictures/Gallery/owner/Adidas}"
 
 # Log file for cleanup actions (append)
-CROSS_DUP_LOG="${CROSS_DUP_LOG:-$PROJ_DIR/cross_dup_$(date +%Y%m%d).log}"
+CROSS_DUP_LOG="${CROSS_DUP_LOG:-$PROJ_DIR/logs/cross_dup_$(date +%Y%m%d).log}"
 
 # Space-separated list of directories to compare against (where "originals" live)
 CROSS_DUP_REFERENCE_DIRS="${CROSS_DUP_REFERENCE_DIRS:-$DEVICE_PHOTO_DIR}"
@@ -51,7 +52,7 @@ REFERENCE_DIRS=($CROSS_DUP_REFERENCE_DIRS)
 FIND_EXTS="$FIND_MEDIA_INAME_PREDICATE"
 
 # Output file: paths in TARGET that are duplicates (one per line), for use with a delete script
-OUTPUT_LIST="${CROSS_DUP_OUTPUT_LIST:-$PROJ_DIR/duplicates_to_remove.txt}"
+OUTPUT_LIST="${CROSS_DUP_OUTPUT_LIST:-$PROJ_DIR/logs/duplicates_to_remove.txt}"
 
 echo -e "${CYAN}=== Cross-folder duplicate finder (by filename) ===${NC}"
 [[ $DRY_RUN -eq 1 ]] && echo -e "${YELLOW}(dry-run: no changes will be made)${NC}"

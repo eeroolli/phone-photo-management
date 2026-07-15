@@ -1,3 +1,5 @@
+> Historical snapshot (July 2025). Predates `scripts/` layout; see root README.md for current structure.
+
 # Project Transfer: Phone Photo Management Scripts
 
 **Transfer Date:** 2025-07-29 00:13:46  

@@ -46,6 +46,10 @@ photo_hash_state/
 # Original project transfer documents (contain personal data)
 PROJECT_TRANSFER_ORIGINAL.md
 
-# Tools directory (contains utility scripts, not core functionality)
-# Note: tools/ directory IS tracked by git, but individual tools may be ignored
-# if they contain sensitive data or are truly one-time use
+# Windows shortcuts and runtime artifacts at repo root
+*.lnk
+duplicates_to_remove.txt
+cross_dup_*.log
+sync_log_*.csv
+
+# Archived tools live under old/tools/ (tracked); ignore sensitive one-off outputs there if added later
