@@ -25,6 +25,9 @@ source "$CONFIG_FILE"
 source "$PROJ_DIR/lib/find_media_extensions.sh"
 source "$PROJ_DIR/lib/resolve_staging_dir.sh"
 
+COPY_LOG="${COPY_LOG:-$PROJ_DIR/logs/copy_log_$(date +%Y).csv}"
+mkdir -p "$PROJ_DIR/logs"
+
 VERIFY_COPIED=1
 DRY_RUN=0
 QUIET_MODE=0
@@ -128,6 +131,9 @@ DATE_FILTER=""
 DATE_DESC="all files"
 case $date_option in
     2)
+        if [[ ! -f "$COPY_LOG" && -f "$PROJ_DIR/copy_log_$(date +%Y).csv" ]]; then
+            COPY_LOG="$PROJ_DIR/copy_log_$(date +%Y).csv"
+        fi
         if [[ -f "$COPY_LOG" ]]; then
             LAST_COPY=$(tail -1 "$COPY_LOG" | cut -d',' -f1)
             if [[ -n "$LAST_COPY" ]]; then

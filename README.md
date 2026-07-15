@@ -323,11 +323,13 @@ Note: `summary_YYYY.txt` is defined in config but not written by any script toda
 
 If you used the repo before scripts moved under `scripts/`:
 
-1. **`config.conf` stays at repo root** — add or set `PROJ_DIR` to the repo root and point log variables to `$PROJ_DIR/logs/...` (see `config.example.conf`)
+1. **`config.conf` stays at repo root** — set `PROJ_DIR` to the repo root and point log variables to `$PROJ_DIR/logs/...` (see `config.example.conf`)
 2. **Run scripts from `scripts/`** — e.g. `bash scripts/copy_photos.sh` instead of `bash copy_photos.sh`
 3. **Update shortcuts** — point Windows/shell shortcuts at `scripts/copy_photos.sh` (or your usual entry script)
-4. **Optional:** move existing root-level `*_log_*.csv` and `cross_dup_*.log` into `logs/`
+4. **Move root-level logs into `logs/`** — `copy_log_*.csv`, `move_log_*.csv`, `delete_log_*.csv`, and `cross_dup_*.log` belong under `logs/` (not repo root)
 5. **Verify:** `bash scripts/validate_setup.sh`
+
+Hash registry and audit files under `photo_hash_state/` stay separate from transfer logs in `logs/`.
 
 Historical material (transfer docs, one-off tools) is under `old/`.
 

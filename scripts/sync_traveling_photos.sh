@@ -128,6 +128,7 @@ if [[ $MOVE_MODE -eq 1 ]] && [[ $DRY_RUN -eq 0 ]]; then
 fi
 
 # Log
+mkdir -p "$PROJ_DIR/logs"
 SYNC_LOG="${PROJ_DIR}/logs/sync_log_$(date +%Y).csv"
 [[ ! -f "$SYNC_LOG" ]] && echo "timestamp,source,target,files_synced,mode,status" > "$SYNC_LOG"
 _timestamp=$(date '+%Y-%m-%d %H:%M:%S')

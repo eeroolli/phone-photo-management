@@ -44,3 +44,23 @@ if photo_hash_state_enabled; then
 else
     echo "○ Hash registry disabled (set PHOTO_HASH_STATE_DIR + HASH_PIPELINE_SLUG to enable)"
 fi
+
+_logs_dir="$PROJ_DIR/logs"
+if mkdir -p "$_logs_dir" 2>/dev/null && touch "$_logs_dir/.validate_write" 2>/dev/null; then
+    rm -f "$_logs_dir/.validate_write"
+    echo "✓ logs/ dir writable: YES ($_logs_dir)"
+else
+    echo "✓ logs/ dir writable: ❌ NO ($_logs_dir)"
+fi
+
+for _var in COPY_LOG MOVE_LOG DELETE_LOG; do
+    _path="${!_var:-}"
+    if [[ -n "$_path" ]]; then
+        _dir="$(dirname "$_path")"
+        if [[ "$_dir" != "$_logs_dir" ]]; then
+            echo "⚠ $_var is not under logs/: $_path"
+        else
+            echo "✓ $_var: $_path"
+        fi
+    fi
+done

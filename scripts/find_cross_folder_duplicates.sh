@@ -44,6 +44,7 @@ TARGET_DIR="${CROSS_DUP_TARGET_DIR:-/storage/emulated/0/Pictures/Gallery/owner/A
 
 # Log file for cleanup actions (append)
 CROSS_DUP_LOG="${CROSS_DUP_LOG:-$PROJ_DIR/logs/cross_dup_$(date +%Y%m%d).log}"
+mkdir -p "$PROJ_DIR/logs"
 
 # Space-separated list of directories to compare against (where "originals" live)
 CROSS_DUP_REFERENCE_DIRS="${CROSS_DUP_REFERENCE_DIRS:-$DEVICE_PHOTO_DIR}"
